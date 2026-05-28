@@ -32,7 +32,7 @@ app.post("/api/gemini/ocr", async (req, res) => {
 
     if (!process.env.GEMINI_API_KEY) {
       return res.status(500).json({ 
-        error: "伺服器未設定 GEMINI_API_KEY，請至 Settings > SecretsPanel 填寫之後重新測試。" 
+        error: "伺服器未偵測到 GEMINI_API_KEY。請點擊 AI Studio 左上角選單或右側的「Settings (設定)」 > 「Secrets (密鑰)」，新增並命名為 GEMINI_API_KEY 填入您的 Gemini API 密鑰即可！" 
       });
     }
 
@@ -156,7 +156,15 @@ app.post("/api/gemini/ocr", async (req, res) => {
       throw new Error("Gemini AI 回傳了空白資訊。");
     }
 
-    const parsedData = JSON.parse(textResult.trim());
+    let cleanedText = textResult.trim();
+    if (cleanedText.startsWith("```")) {
+      const match = cleanedText.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+      if (match) {
+        cleanedText = match[1];
+      }
+    }
+
+    const parsedData = JSON.parse(cleanedText.trim());
     res.json(parsedData);
 
   } catch (err: any) {
