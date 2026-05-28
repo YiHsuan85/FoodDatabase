@@ -40,7 +40,7 @@ app.post("/api/gemini/ocr", async (req, res) => {
     }
     if (!process.env.GEMINI_API_KEY) {
       return res.status(500).json({
-        error: "\u4F3A\u670D\u5668\u672A\u8A2D\u5B9A GEMINI_API_KEY\uFF0C\u8ACB\u81F3 Settings > SecretsPanel \u586B\u5BEB\u4E4B\u5F8C\u91CD\u65B0\u6E2C\u8A66\u3002"
+        error: "\u4F3A\u670D\u5668\u672A\u5075\u6E2C\u5230 GEMINI_API_KEY\u3002\u8ACB\u9EDE\u64CA AI Studio \u5DE6\u4E0A\u89D2\u9078\u55AE\u6216\u53F3\u5074\u7684\u300CSettings (\u8A2D\u5B9A)\u300D > \u300CSecrets (\u5BC6\u9470)\u300D\uFF0C\u65B0\u589E\u4E26\u547D\u540D\u70BA GEMINI_API_KEY \u586B\u5165\u60A8\u7684 Gemini API \u5BC6\u9470\u5373\u53EF\uFF01"
       });
     }
     const ai = new import_genai.GoogleGenAI({
@@ -152,7 +152,14 @@ app.post("/api/gemini/ocr", async (req, res) => {
     if (!textResult) {
       throw new Error("Gemini AI \u56DE\u50B3\u4E86\u7A7A\u767D\u8CC7\u8A0A\u3002");
     }
-    const parsedData = JSON.parse(textResult.trim());
+    let cleanedText = textResult.trim();
+    if (cleanedText.startsWith("```")) {
+      const match = cleanedText.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+      if (match) {
+        cleanedText = match[1];
+      }
+    }
+    const parsedData = JSON.parse(cleanedText.trim());
     res.json(parsedData);
   } catch (err) {
     console.error("OCR API error in backend", err);
