@@ -1,0 +1,6 @@
+{
+  "name": "SmartFood 智慧營養標示資料庫",
+  "description": "這是一款兼具前台查詢與後台AI智慧管理的健全食物營養標示庫。前台支援多食品營養對比（圖表呈現）、智慧條碼掃描辨識與搜尋，後台支援密碼登入、手動輸入與 Gemini AI OCR 照相辨識營養標示，快速新增食品資訊並附帶完整的版本更新歷史紀錄。",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
