@@ -56,9 +56,14 @@ export const FOOD_CATEGORIES = [
   "休閒零嘴",
   "醬料",
   "即食與熟食",
-  "堅果種子",    // 增加建議
-  "健身補給",    // 增加建議
-  "高蛋白點心"   // 增加建議
+  "堅果種子",    
+  "健身補給",    
+  "高蛋白點心",
+  "全脂乳品類",
+  "脫脂乳品類",
+  "低脂乳品類",
+  "保健品類",
+  "外食類"
 ] as const;
 
 export type FoodCategory = typeof FOOD_CATEGORIES[number];
