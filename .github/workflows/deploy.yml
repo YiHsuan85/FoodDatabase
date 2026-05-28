@@ -3,9 +3,13 @@ on:
   push:
     branches:
       - main
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    # 【關鍵修改：在這裡加入權限設定】
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v3
       - name: Install and Build
