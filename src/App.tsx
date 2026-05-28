@@ -4,6 +4,8 @@
  */
 
 import React, { useState, useEffect } from "react";
+import { db } from "./firebase";
+import { collection, onSnapshot, doc, setDoc, deleteDoc } from "firebase/firestore";
 import { FoodItem, FOOD_CATEGORIES, NutritionValues, VersionLog } from "./types";
 import NutritionCard from "./components/NutritionCard";
 import ComparePanel from "./components/ComparePanel";
@@ -60,51 +62,64 @@ export default function App() {
   const [selectedDetailFood, setSelectedDetailFood] = useState<FoodItem | null>(null);
 
   // Fetch foods on mount
-  const fetchFoods = async () => {
+  useEffect(() => {
     setLoading(true);
     setErrorMessage("");
-    try {
-      const response = await fetch("/api/foods");
-      if (!response.ok) {
-        throw new Error("伺服器發送了不合規的響應狀態");
-      }
-      const data = await response.json();
-      setFoods(data);
-    } catch (err) {
-      setErrorMessage("無法連接到本地 Express 伺服器，正在使用本地暫存備份數據。");
-      console.error(err);
-    } finally {
+    const pathForOnSnapshot = 'foods';
+    const unsubscribe = onSnapshot(collection(db, pathForOnSnapshot), (snapshot) => {
+      const dbFoods = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FoodItem));
+      // Sort logic might be on client, but let's just return what we have
+      setFoods(dbFoods as any);
       setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchFoods();
+    }, (error) => {
+      setErrorMessage("無法連接到 Firebase Firestore 伺服器，或權限不足。");
+      setLoading(false);
+    });
+    
+    return () => unsubscribe();
   }, []);
 
   // Admin save callback
   const handleSaveFood = async (newFood: Omit<FoodItem, "history">, desc?: string): Promise<boolean> => {
     try {
-      const token = sessionStorage.getItem("smartfood_token");
-      const response = await fetch("/api/foods", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": token ? `Bearer ${token}` : ""
-        },
-        body: JSON.stringify({ food: newFood, actionDescription: desc })
-      });
+      const existingFood = foods.find(f => f.id === newFood.id || (newFood.barcode && f.barcode === newFood.barcode && f.barcode !== ""));
+      const now = new Date();
+      const timestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        alert(errorData.error || "儲存失败");
-        return false;
+      if (existingFood) {
+        const changes: string[] = [];
+        if (existingFood.name !== newFood.name) changes.push(`名稱由「${existingFood.name}」改為「${newFood.name}」`);
+        if (existingFood.category !== newFood.category) changes.push(`類別改為「${newFood.category}」`);
+        
+        const descLog = desc || (changes.length > 0 ? `更新了商品內容` : "更新商品營養資訊");
+        const newLog = {
+          id: "v-" + Math.random().toString(36).substr(2, 9),
+          timestamp,
+          action: "update" as const,
+          description: descLog,
+          author: "管理者 (Google Auth)"
+        };
+
+        const finalHistory = [newLog, ...(existingFood.history || [])];
+        const updatedFood = { ...newFood, id: existingFood.id, history: finalHistory };
+        await setDoc(doc(db, "foods", updatedFood.id), updatedFood);
+        return true;
+      } else {
+        const newId = newFood.id || "food-" + Math.random().toString(36).substr(2, 9);
+        const newLog = {
+          id: "v-" + Math.random().toString(36).substr(2, 9),
+          timestamp,
+          action: "create" as const,
+          description: desc || "新增防拷食物數據，建立首個版本型號紀錄",
+          author: "管理者 (Google Auth)"
+        };
+        const food = { ...newFood, id: newId, history: [newLog] };
+        await setDoc(doc(db, "foods", food.id), food);
+        return true;
       }
-
-      await fetchFoods(); // Reload database
-      return true;
     } catch (err) {
-      alert("儲存至後端資料庫發生網路阻礙");
+      console.error(err);
+      alert("儲存至雲端資料庫發生權限拒絕或網路阻礙");
       return false;
     }
   };
@@ -112,26 +127,12 @@ export default function App() {
   // Admin delete callback
   const handleDeleteFood = async (id: string): Promise<boolean> => {
     try {
-      const token = sessionStorage.getItem("smartfood_token");
-      const response = await fetch(`/api/foods/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": token ? `Bearer ${token}` : ""
-        }
-      });
-
-      if (!response.ok) {
-        const errData = response.status === 403 ? { error: "權限不足" } : await response.json();
-        alert(errData.error || "刪除失敗");
-        return false;
-      }
-
-      await fetchFoods();
-      // Remove deleted item from compare list if present
+      await deleteDoc(doc(db, "foods", id));
       setSelectedCompareFoods(selectedCompareFoods.filter((f) => f.id !== id));
       return true;
     } catch (err) {
-      alert("網路異常，刪除失敗");
+      console.error(err);
+      alert("網路異常或權限不足，刪除失敗");
       return false;
     }
   };
