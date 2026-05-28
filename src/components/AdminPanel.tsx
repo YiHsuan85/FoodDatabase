@@ -25,11 +25,13 @@ import {
   History,
   CheckCircle,
   HelpCircle,
-  Calculator
+  Calculator,
+  Database
 } from "lucide-react";
 import { ThemeColors, THEME_PRESETS } from "../themes";
 import { auth } from "../firebase";
 import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, User } from "firebase/auth";
+import { INITIAL_FOODS } from "../initialFoods";
 
 
 interface AdminPanelProps {
@@ -89,6 +91,11 @@ export default function AdminPanel({ foods, onSaveFood, onDeleteFood, theme }: A
   const [isOcrLoading, setIsOcrLoading] = useState<boolean>(false);
   const [ocrError, setOcrError] = useState<string>("");
   const [ocrSuccess, setOcrSuccess] = useState<boolean>(false);
+
+  // Seeding state variables
+  const [isSeeding, setIsSeeding] = useState<boolean>(false);
+  const [seedSuccess, setSeedSuccess] = useState<boolean>(false);
+  const [seedError, setSeedError] = useState<string>("");
 
   // Editing Food State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -400,8 +407,57 @@ export default function AdminPanel({ foods, onSaveFood, onDeleteFood, theme }: A
             </div>
 
             {foods.length === 0 ? (
-              <div className="py-12 text-center text-[#4B5563] text-xs">
-                目前資料庫為空，請點選右上角快速新增。
+              <div className="py-16 md:py-24 border-2 border-dashed border-[#E5E7EB] rounded-2xl flex flex-col items-center justify-center p-6 text-center">
+                <Database className={`w-12 h-12 ${currentTheme.text} mb-4 opacity-80`} />
+                <h3 className="font-extrabold text-[#111827] text-md">雲端資料庫目前為空</h3>
+                <p className="text-xs text-[#4B5563] mt-1.5 max-w-sm leading-relaxed">
+                  您已成功連線至自定義的 Firebase 專案 <strong>smart-food-database</strong>！您可以一鍵為此新專案資料庫建立預設的 8 大常用標竿食品數據。
+                </p>
+                
+                <div className="mt-6 flex flex-wrap gap-3 justify-center">
+                  <button
+                    onClick={async () => {
+                      setIsSeeding(true);
+                      setSeedError("");
+                      setSeedSuccess(false);
+                      try {
+                        let successCount = 0;
+                        for (const item of INITIAL_FOODS) {
+                          const res = await onSaveFood(item, "初始資料庫建立：匯入預設台灣八大標竿食品原料數據");
+                          if (res) successCount++;
+                        }
+                        setSeedSuccess(true);
+                      } catch (err: any) {
+                        setSeedError(err.message || "匯入時發生非預期錯誤");
+                      } finally {
+                        setIsSeeding(false);
+                      }
+                    }}
+                    disabled={isSeeding}
+                    className={`py-3 px-6 ${currentTheme.bg} hover:brightness-110 text-white rounded-xl text-xs font-bold cursor-pointer flex items-center gap-2 transition-all shadow-sm ${isSeeding ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                    {isSeeding ? "正在批次寫入數據..." : "一鍵匯入預設 8 大標竿食品數據"}
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("add")}
+                    className="py-3 px-6 bg-white border border-[#E5E7EB] hover:bg-neutral-50 text-neutral-800 rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1.5 transition-all shadow-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    手動新增首筆商品
+                  </button>
+                </div>
+                {seedSuccess && (
+                  <p className="text-xs text-emerald-600 font-bold mt-4 flex items-center gap-1.5 justify-center">
+                    <CheckCircle className="w-4 h-4" />
+                    資料庫初始數據 8 大食品已成功批量寫入！
+                  </p>
+                )}
+                {seedError && (
+                  <p className="text-xs text-rose-500 font-bold mt-4">
+                    匯入失敗：{seedError} (請確保您的 Firestore 資料庫與規則已正確部署，或查看 Console 報錯)
+                  </p>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
