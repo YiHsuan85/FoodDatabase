@@ -7,7 +7,7 @@ export default defineConfig(({ command, mode }) => {
   return {
     // 關鍵設定：請將 'FoodDatabase' 換成您 GitHub 儲存庫的實際名稱
     // 如果是部署在個人首頁 (username.github.io)，則可以設為 '/' 或直接移除 base
-    base: './ ', 
+    base: '/FoodDatabase/', 
     
     plugins: [react(), tailwindcss()],
     resolve: {
