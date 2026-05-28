@@ -1,0 +1,68 @@
+{
+  "entities": {
+    "NutritionValues": {
+      "title": "NutritionValues",
+      "description": "Nutrition facts per serving or per 100g",
+      "type": "object",
+      "properties": {
+        "energy": { "type": "number" },
+        "protein": { "type": "number" },
+        "fat": { "type": "number" },
+        "saturatedFat": { "type": "number" },
+        "transFat": { "type": "number" },
+        "cholesterol": { "type": "number" },
+        "carbohydrate": { "type": "number" },
+        "sugar": { "type": "number" },
+        "fiber": { "type": "number" },
+        "sodium": { "type": "number" },
+        "calcium": { "type": "number" },
+        "potassium": { "type": "number" },
+        "phosphorus": { "type": "number" },
+        "magnesium": { "type": "number" },
+        "zinc": { "type": "number" },
+        "iron": { "type": "number" }
+      }
+    },
+    "FoodHistory": {
+      "title": "FoodHistory",
+      "description": "Historical audit log entry of food data changes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "action": { "type": "string" },
+        "description": { "type": "string" },
+        "author": { "type": "string" }
+      }
+    },
+    "FoodItem": {
+      "title": "FoodItem",
+      "description": "Represents a food item logged in the database",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "brand": { "type": "string" },
+        "barcode": { "type": "string" },
+        "category": { "type": "string" },
+        "image": { "type": "string" },
+        "servingSizeText": { "type": "string" },
+        "servingValue": { "type": "number" },
+        "isLiquid": { "type": "boolean" },
+        "perServing": { "$ref": "NutritionValues" },
+        "per100g": { "$ref": "NutritionValues" },
+        "history": {
+          "type": "array",
+          "items": { "$ref": "FoodHistory" }
+        }
+      },
+      "required": ["id", "name", "category", "servingValue", "isLiquid"]
+    }
+  },
+  "firestore": {
+    "foods/{foodId}": {
+      "schema": { "$ref": "FoodItem" },
+      "description": "Collection of food items and their nutrition facts"
+    }
+  }
+}
