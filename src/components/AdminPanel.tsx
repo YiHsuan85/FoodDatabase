@@ -411,7 +411,7 @@ export default function AdminPanel({ foods, onSaveFood, onDeleteFood, theme }: A
                 <Database className={`w-12 h-12 ${currentTheme.text} mb-4 opacity-80`} />
                 <h3 className="font-extrabold text-[#111827] text-md">雲端資料庫目前為空</h3>
                 <p className="text-xs text-[#4B5563] mt-1.5 max-w-sm leading-relaxed">
-                  您已成功連線至自定義的 Firebase 專案 <strong>smart-food-database</strong>！您可以一鍵為此新專案資料庫建立預設的 8 大常用標竿食品數據。
+                  您已成功連線至自定義的 Firebase 專案 <strong>smart-food-database</strong>！您可以一鍵為此新專案資料庫批量建立預設的 <strong>30 大台灣常用食品、乳品與保健品原料標竿數據</strong>。
                 </p>
                 
                 <div className="mt-6 flex flex-wrap gap-3 justify-center">
@@ -423,7 +423,7 @@ export default function AdminPanel({ foods, onSaveFood, onDeleteFood, theme }: A
                       try {
                         let successCount = 0;
                         for (const item of INITIAL_FOODS) {
-                          const res = await onSaveFood(item, "初始資料庫建立：匯入預設台灣八大標竿食品原料數據");
+                          const res = await onSaveFood(item, "初始資料庫建立：匯入預設台灣 30 大標竿食品、鮮乳與保健品原料數據");
                           if (res) successCount++;
                         }
                         setSeedSuccess(true);
@@ -437,7 +437,7 @@ export default function AdminPanel({ foods, onSaveFood, onDeleteFood, theme }: A
                     className={`py-3 px-6 ${currentTheme.bg} hover:brightness-110 text-white rounded-xl text-xs font-bold cursor-pointer flex items-center gap-2 transition-all shadow-sm ${isSeeding ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     {isSeeding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                    {isSeeding ? "正在批次寫入數據..." : "一鍵匯入預設 8 大標竿食品數據"}
+                    {isSeeding ? "正在批次寫入數據..." : "一鍵匯入預設 30 大標竿與乳品數據"}
                   </button>
                   <button
                     onClick={() => setActiveTab("add")}
@@ -450,7 +450,7 @@ export default function AdminPanel({ foods, onSaveFood, onDeleteFood, theme }: A
                 {seedSuccess && (
                   <p className="text-xs text-emerald-600 font-bold mt-4 flex items-center gap-1.5 justify-center">
                     <CheckCircle className="w-4 h-4" />
-                    資料庫初始數據 8 大食品已成功批量寫入！
+                    資料庫初始數據 30 大食品已經成功批量寫入！
                   </p>
                 )}
                 {seedError && (
