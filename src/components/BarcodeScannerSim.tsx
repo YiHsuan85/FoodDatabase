@@ -87,21 +87,27 @@ export default function BarcodeScannerSim({
         });
         const data = await response.json();
         
-        if (data.barcode) {
-          onBarcodeDetected(data.barcode);
-          stopCamera();
-        } else {
-          // Fallback guess: if AI found a match in DB
-          alert("相片中未發現明顯條碼。將為您模擬嘗試全文比對：" + (data.name || ""));
-          if (data.name) {
-            const found = foods.find((f) => f.name.includes(data.name) || data.name.includes(f.name));
-            if (found) {
-              onBarcodeDetected(found.barcode);
-              stopCamera();
+        if (response.ok) {
+          if (data.barcode) {
+            onBarcodeDetected(data.barcode);
+            stopCamera();
+          } else {
+            // Fallback guess: if AI found a match in DB
+            alert("相片中未發現明顯條碼。將為您模擬嘗試全文比對其商品名稱：" + (data.name || ""));
+            if (data.name) {
+              const found = foods.find((f) => f.name.includes(data.name) || data.name.includes(f.name));
+              if (found) {
+                onBarcodeDetected(found.barcode);
+                stopCamera();
+              } else {
+                alert("找不到符合「" + data.name + "」的食品，請先至後台管理新增此食品資訊。");
+              }
             } else {
-              alert("找不到符合該名稱的食品，請預先在管理台新增資料。");
+              alert("AI 無法在圖片中解析出任何食品名稱或條碼！");
             }
           }
+        } else {
+          alert("辨識失敗：" + (data.error || "伺服器發生異常。請確認您的 GEMINI_API_KEY 已正確設定！"));
         }
       } catch (err) {
         alert("掃描圖片時發生連線中斷。");
