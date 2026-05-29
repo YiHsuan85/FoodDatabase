@@ -155,6 +155,7 @@ const DENSE_FOOD_SOURCE: DenseFood[] = [
   { name: "羅董有機糙米奶 245ml", category: "全榖雜糧類", carbs: 17.2, protein: 1.2, fat: 0, kcal: 73.6, na: 0 },
   { name: "Costco 愛之味 純濃燕麥 340ml (1瓶) ", category: "油脂與堅果類", carbs: 28.2, protein: 4.8, fat: 3.4, kcal: 153.8, na: 68, k: 105.4 },
   { name: "Costco 桂格 減糖黑十穀 38g (1包) ", category: "油脂與堅果類", carbs: 28, protein: 2.3, fat: 5.5, kcal: 166, na: 45 },
+  { name: '味全 紅龍檸檬雞柳條 50g(條)', category: '中脂豆魚蛋肉類', carbs: 7.8, protein: 6, fat: 7.5, kcal: 123, na: 191, k: '', p: '' },
   { name: "芝初 純黑芝麻醬 10g", category: "油脂與堅果類", carbs: 1.4, protein: 2.2, fat: 5.9, kcal: 67.5, na: 1 },
   { name: "純黑芝麻醬 20g", category: "油脂與堅果類", carbs: 3.2, protein: 4.3, fat: 11.5, kcal: 131.7, na: 0 },
   { name: "Costco 馬玉山 特濃核桃黑芝麻糊 37g (1包) ", category: "油脂與堅果類", carbs: 25.8, protein: 4.6, fat: 4.8, kcal: 158, na: 3, k: 92 },
