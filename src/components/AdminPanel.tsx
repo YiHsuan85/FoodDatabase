@@ -112,6 +112,20 @@ export default function AdminPanel({ foods, onSaveFood, onDeleteFood, theme }: A
   const [per100gForm, setPer100gForm] = useState<NutritionValues>(emptyNutrientValues());
   const [actionDescription, setActionDescription] = useState<string>("");
 
+  // List Filter State
+  const [adminSearchQuery, setAdminSearchQuery] = useState<string>("");
+  const [adminSelectedCategory, setAdminSelectedCategory] = useState<string>("all");
+
+  const filteredFoods = foods.filter((food) => {
+    const matchesSearch = adminSearchQuery.trim() === "" ||
+      food.name.toLowerCase().includes(adminSearchQuery.toLowerCase()) ||
+      (food.brand && food.brand.toLowerCase().includes(adminSearchQuery.toLowerCase())) ||
+      (food.barcode && food.barcode.toLowerCase().includes(adminSearchQuery.toLowerCase()));
+    
+    const matchesCategory = adminSelectedCategory === "all" || food.category === adminSelectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
   // Handling Authentication submit
   const handleAuthSubmit = async () => {
     setAuthError("");
@@ -395,15 +409,45 @@ export default function AdminPanel({ foods, onSaveFood, onDeleteFood, theme }: A
         {/* TAB 1: List with Edit/Delete */}
         {activeTab === "list" && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-[#E5E7EB] pb-3 mb-2">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E7EB] pb-3 mb-2">
               <span className="font-extrabold text-sm text-[#111827]">資料庫現存食品總覽</span>
-              <button
-                onClick={() => setActiveTab("add")}
-                className={`py-1.5 px-3 ${currentTheme.bg} hover:brightness-110 text-white rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1 transition-all`}
-              >
-                <Plus className="w-3.5 h-3.5" />
-                新增食品
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={isSeeding}
+                  onClick={async () => {
+                    if (confirm("這將會把您在 initialFoods.ts 修改的最新標竿資料，「重新同步並覆蓋寫入」或新加入到您當前的雲端 Firebase 資料庫中。確認執行？")) {
+                      setIsSeeding(true);
+                      setSeedError("");
+                      setSeedSuccess(false);
+                      try {
+                        let successCount = 0;
+                        for (const item of INITIAL_FOODS) {
+                          const res = await onSaveFood(item, "手動觸發雲端重新同步：覆蓋/補足最新修訂之食品規格數據");
+                          if (res) successCount++;
+                        }
+                        setSeedSuccess(true);
+                        alert(`同步成功！已成功同步 ${successCount} 筆標竿食品數據到 Firebase 雲端。`);
+                      } catch (err: any) {
+                        setSeedError(err.message || "同步時發生非預期錯誤");
+                        alert("同步失敗：" + (err.message || "未知錯誤"));
+                      } finally {
+                        setIsSeeding(false);
+                      }
+                    }
+                  }}
+                  className="py-1.5 px-3 bg-white border border-[#E5E7EB] text-[#4B5563] hover:text-[#111827] hover:bg-neutral-50 rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1 transition-all disabled:opacity-50"
+                >
+                  {isSeeding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5 text-yellow-500" />}
+                  重新同步預置資料 ({INITIAL_FOODS.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab("add")}
+                  className={`py-1.5 px-3 ${currentTheme.bg} hover:brightness-110 text-white rounded-lg text-xs font-bold cursor-pointer flex items-center gap-1 transition-all`}
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  新增食品
+                </button>
+              </div>
             </div>
 
             {foods.length === 0 ? (
@@ -460,49 +504,120 @@ export default function AdminPanel({ foods, onSaveFood, onDeleteFood, theme }: A
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {foods.map((food) => (
-                  <div 
-                    key={food.id}
-                    className="p-4 bg-[#F9FAFB] rounded-xl border border-[#E5E7EB] flex items-center justify-between gap-4"
-                  >
-                    <div>
-                      <span className={`text-[10px] font-bold ${currentTheme.bgLight} border ${currentTheme.borderLight} ${currentTheme.text} px-2 py-0.5 rounded-full`}>
-                        {food.category}
-                      </span>
-                      <h4 className="font-extrabold text-[#111827] mt-1.5">
-                        {food.brand ? `[${food.brand}] ` : ""}{food.name}
-                      </h4>
-                      <p className="text-xs text-[#4B5563] font-mono mt-0.5">
-                        條碼：{food.barcode || "未登載"} | 份量：{food.servingValue}{food.isLiquid ? "毫升" : "公克"}
-                      </p>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => startEdit(food)}
-                        className="p-1.5 px-3 text-xs bg-white border border-[#E5E7EB] font-bold rounded-lg cursor-pointer transition-all text-[#4B5563] hover:text-[#111827]"
-                        style={{ color: '#4b5563', borderColor: '#E5E7EB' }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.color = currentTheme.primary;
-                          e.currentTarget.style.borderColor = currentTheme.primary;
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.color = '#4b5563';
-                          e.currentTarget.style.borderColor = '#E5E7EB';
-                        }}
-                      >
-                        編輯
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(food.id, food.name)}
-                        className="p-1.5 px-3 text-xs bg-rose-50 border border-rose-200 font-bold rounded-lg hover:bg-rose-100 cursor-pointer text-rose-600 transition-colors"
-                      >
-                        刪除
-                      </button>
-                    </div>
+              <div className="space-y-5">
+                {/* 篩選與過濾工具列 */}
+                <div className="bg-[#F9FAFB] p-4 rounded-xl border border-[#E5E7EB] grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#4B5563] mb-1">
+                      關鍵字搜尋 (食品名稱、品牌、條碼)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="輸入關鍵字..."
+                      value={adminSearchQuery}
+                      onChange={(e) => setAdminSearchQuery(e.target.value)}
+                      className={`w-full px-3 py-1.5 border border-[#E5E7EB] bg-white text-[#111827] placeholder-zinc-400 rounded-lg text-xs focus:outline-none focus:ring-2 ${focusRingClass}`}
+                    />
                   </div>
-                ))}
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-[#4B5563] mb-1">
+                      按分類篩選
+                    </label>
+                    <select
+                      value={adminSelectedCategory}
+                      onChange={(e) => setAdminSelectedCategory(e.target.value)}
+                      className={`w-full px-3 py-1.5 border border-[#E5E7EB] bg-white text-[#111827] rounded-lg text-xs focus:outline-none focus:ring-2 ${focusRingClass}`}
+                    >
+                      <option value="all">全部類別 ({foods.length})</option>
+                      {FOOD_CATEGORIES.map((cat) => {
+                        const count = foods.filter(f => f.category === cat).length;
+                        return (
+                          <option key={cat} value={cat}>
+                            {cat} ({count})
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAdminSearchQuery("");
+                        setAdminSelectedCategory("all");
+                      }}
+                      className="w-full py-1.5 border border-[#E5E7EB] hover:bg-neutral-50 text-[#4B5563] font-bold text-xs rounded-lg cursor-pointer transition-colors"
+                    >
+                      清除篩選條件
+                    </button>
+                  </div>
+                </div>
+
+                {filteredFoods.length === 0 ? (
+                  <div className="py-16 border border-dashed border-[#E5E7EB] bg-[#F9FAFB] rounded-xl text-center">
+                    <Database className="w-8 h-8 text-neutral-400 mx-auto mb-2 opacity-65" />
+                    <p className="text-xs text-[#4B5563] font-medium">沒有符合目前篩選條件的食物數據。</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAdminSearchQuery("");
+                        setAdminSelectedCategory("all");
+                      }}
+                      className="mt-3 text-[11px] text-indigo-600 hover:underline font-bold"
+                    >
+                      重設篩選條件
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {filteredFoods.map((food) => (
+                      <div 
+                        key={food.id}
+                        className="p-4 bg-[#F9FAFB] rounded-xl border border-[#E5E7EB] flex items-center justify-between gap-4"
+                      >
+                        <div>
+                          <span className={`text-[10px] font-bold ${currentTheme.bgLight} border ${currentTheme.borderLight} ${currentTheme.text} px-2 py-0.5 rounded-full`}>
+                            {food.category}
+                          </span>
+                          <h4 className="font-extrabold text-[#111827] mt-1.5">
+                            {food.brand ? `[${food.brand}] ` : ""}{food.name}
+                          </h4>
+                          <p className="text-xs text-[#4B5563] font-mono mt-0.5">
+                            條碼：{food.barcode || "未登載"} | 份量：{food.servingValue}{food.isLiquid ? "毫升" : "公克"}
+                          </p>
+                        </div>
+                        
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startEdit(food)}
+                            className="p-1.5 px-3 text-xs bg-white border border-[#E5E7EB] font-bold rounded-lg cursor-pointer transition-all text-[#4B5563] hover:text-[#111827]"
+                            style={{ color: '#4b5563', borderColor: '#E5E7EB' }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = currentTheme.primary;
+                              e.currentTarget.style.borderColor = currentTheme.primary;
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = '#4b5563';
+                              e.currentTarget.style.borderColor = '#E5E7EB';
+                            }}
+                          >
+                            編輯
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteClick(food.id, food.name)}
+                            className="p-1.5 px-3 text-xs bg-rose-50 border border-rose-200 font-bold rounded-lg hover:bg-rose-100 cursor-pointer text-rose-600 transition-colors"
+                          >
+                            刪除
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
