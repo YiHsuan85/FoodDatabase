@@ -7,6 +7,7 @@ import React, { useState, useEffect } from "react";
 import { db } from "./firebase";
 import { collection, onSnapshot, doc, setDoc, deleteDoc } from "firebase/firestore";
 import { FoodItem, FOOD_CATEGORIES, NutritionValues, VersionLog } from "./types";
+import { INITIAL_FOODS } from "./initialFoods";
 import NutritionCard from "./components/NutritionCard";
 import ComparePanel from "./components/ComparePanel";
 import AdminPanel from "./components/AdminPanel";
@@ -38,8 +39,21 @@ export default function App() {
     localStorage.setItem("smartfood_theme_id", theme.id);
   };
 
-  const [foods, setFoods] = useState<FoodItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [foods, setFoods] = useState<FoodItem[]>(() => {
+    return INITIAL_FOODS.map(f => ({
+      ...f,
+      history: [
+        {
+          id: "init-" + f.id,
+          timestamp: "2026-05-29 00:00:00",
+          action: "system_init",
+          description: "本地加載預置標竿食物數據",
+          author: "系統初始化"
+        }
+      ]
+    } as FoodItem));
+  });
+  const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
   // Navigation tab: 'explore' | 'compare' | 'admin'
@@ -63,16 +77,15 @@ export default function App() {
 
   // Fetch foods on mount
   useEffect(() => {
-    setLoading(true);
-    setErrorMessage("");
     const pathForOnSnapshot = 'foods';
     const unsubscribe = onSnapshot(collection(db, pathForOnSnapshot), (snapshot) => {
       const dbFoods = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FoodItem));
-      // Sort logic might be on client, but let's just return what we have
-      setFoods(dbFoods as any);
+      if (dbFoods.length > 0) {
+        setFoods(dbFoods);
+      }
       setLoading(false);
     }, (error) => {
-      setErrorMessage("無法連接到 Firebase Firestore 伺服器，或權限不足。");
+      setErrorMessage("無法連接到 Firebase Firestore 伺服器，或權限不足（已啟用本地靜態快取數據）。");
       setLoading(false);
     });
     
